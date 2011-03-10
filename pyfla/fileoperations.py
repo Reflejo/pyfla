@@ -1,6 +1,7 @@
 import os, sys
 import shutil
 import subprocess
+import unicodedata
 import zipfile
 
 BACKPORT_UNZIP = '/opt/local/bin/unzip -o -d %s "%s"'
