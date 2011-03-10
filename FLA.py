@@ -256,10 +256,11 @@ class Symbol(object):
             ns = self.dom.attrib['xmlns']
 
             # Iterate through dependencies and set up needed properties
-            for ttimeline in self.dom.iter("{%s}DOMTimeline" % ns):
-                for tlayer in self.dom.iter("{%s}DOMLayer" % ns):
-                    for tframe in tlayer.iter("{%s}DOMFrame" % ns):
-                        for tsymb in tframe.iter("{%s}DOMSymbolInstance" % ns):
+            for ttimeline in self.dom.getiterator("{%s}DOMTimeline" % ns):
+                for tlayer in ttimeline.getiterator("{%s}DOMLayer" % ns):
+                    for tframe in tlayer.getiterator("{%s}DOMFrame" % ns):
+                        tagname = "{%s}DOMSymbolInstance" % ns
+                        for tsymb in tframe.getiterator(tagname):
                             # Fix "<" and ">" characters from xml
                             name = tsymb.attrib['libraryItemName']
                             for char in ENTITIES_FIX:
