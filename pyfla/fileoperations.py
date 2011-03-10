@@ -1,4 +1,4 @@
-import os
+import os, sys
 import shutil
 import subprocess
 import zipfile
@@ -28,3 +28,17 @@ def funzip(filename, path):
                                 stdout=subprocess.PIPE)
         out = proc.stdout.read()
         proc.wait()
+
+def fsencode(filename):
+    """
+    Encode filename according to platform
+    """
+    if isinstance(filename, str):
+        filename = filename.decode('utf-8')
+
+    if sys.platform == 'linux2':
+        value = unicodedata.normalize('NFKD', filename)
+        return value.encode('utf-8')
+
+    if sys.platform == 'darwin':
+        return filename.encode('utf-8')

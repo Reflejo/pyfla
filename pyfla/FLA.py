@@ -15,7 +15,7 @@ from hashlib import md5
 from odict import OrderedDict
 from xml.etree.cElementTree import fromstring
 
-from fileoperations import fzip, funzip
+from fileoperations import fzip, funzip, fsencode
 
 # Get current script directory and append template path
 TPL_PATH = os.path.dirname(os.path.realpath(__file__)) + '/templates'
@@ -210,7 +210,7 @@ class Symbol(object):
 
         self.xml = "%s/LIBRARY/%s" % (FLA.directory, tag['href'])
 
-        self.dom = fromstring(open(self.xml).read())
+        self.dom = fromstring(open(fsencode(self.xml)).read())
         self.dom.attrib['xmlns'] = self.dom.tag.split('}')[0][1:]
 
     def to_xml(self):
