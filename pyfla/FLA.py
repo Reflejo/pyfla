@@ -163,14 +163,14 @@ class FLA(object):
                 }
 
             dest_file = "%s/LIBRARY/%s.xml" % (newfla.directory, ohref)
-            dest_dir = os.path.dirname(dest_file)
+            dest_dir = fsencode(os.path.dirname(dest_file))
 
             # Create directory if it does not exists
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
 
-            if os.path.dirname(symbol.xml) != dest_dir:
-                shutil.copy(symbol.xml, dest_dir)
+            if os.path.dirname(fsencode(symbol.xml)) != dest_dir:
+                shutil.copy(fsencode(symbol.xml), dest_dir)
 
             newfla.symbols[ohref].xml = dest_file
 
