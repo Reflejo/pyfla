@@ -97,8 +97,8 @@ class FLA(object):
         if domsymbols is not None:
             childs = domsymbols.getchildren()
             for symbol in childs:
-                href = symbol.attrib['href'][:-4]
-                fla.symbols[href] = Symbol(symbol.attrib, fla)
+                name = symbol.attrib['href'][:-4]
+                fla.symbols[name] = Symbol(symbol.attrib, fla)
 
         return fla
 
@@ -139,18 +139,19 @@ class FLA(object):
         open('%s/%s.xfl' % (self.directory, self.name), 'w').write('PROXY-CS5')
 
         # Make FLA file (Just a regular zip file)
-        print "saving", filepath, self.directory
         fzip(filepath, self.directory)
 
     @classmethod
-    def from_symbols(klass, symbols, basedir):
+    def from_symbols(klass, symbols, fladirectory=None):
         paths = lambda n: [] \
             if n == os.path.dirname(n) else paths(os.path.dirname(n)) + [n]
 
         newfla = FLA(name='dynamic')
         newfla.symbols = symbols
+        if fladirectory:
+            newfla.directory = fladirectory
 
-        for href, symbol in symbols.iteritems():
+        for ohref, symbol in symbols.items():
             href = os.path.dirname(symbol.attrs['href'])
 
             # Fill up folders automatically, based on symbols
@@ -161,14 +162,17 @@ class FLA(object):
                     'itemID': "0000%s-0000%s" % (uid[:4], uid[4:8])
                 }
 
-
-            dest_dir = "%s/LIBRARY/%s" % (newfla.directory, href)
+            dest_file = "%s/LIBRARY/%s.xml" % (newfla.directory, ohref)
+            dest_dir = os.path.dirname(dest_file)
 
             # Create directory if it does not exists
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
 
-            shutil.copy(symbol.xml, dest_dir)
+            if os.path.dirname(symbol.xml) != dest_dir:
+                shutil.copy(symbol.xml, dest_dir)
+
+            newfla.symbols[ohref].xml = dest_file
 
         return newfla
 
@@ -181,7 +185,7 @@ class FLA(object):
             raise TypeError("You cannot add other than FLA object")
 
         symbols = dict(self.symbols, **other.symbols)
-        return from_symbols(symbols)
+        return FLA.from_symbols(symbols, self.directory)
 
 
 ENTITIES_FIX = (':', '<', '>')
@@ -198,6 +202,12 @@ class Symbol(object):
         self._linkage = None
 
         self.attrs = tag
+
+        # Get xml filename and remove extension
+        self.name = os.path.basename(tag['href'])[:-4]
+        if isinstance(self.name, str):
+            self.name = unicode(self.name, 'utf-8')
+
         self.xml = "%s/LIBRARY/%s" % (FLA.directory, tag['href'])
 
         self.dom = fromstring(open(self.xml).read())
@@ -218,7 +228,7 @@ class Symbol(object):
 
     def __str__(self):
         # Visualization candy
-        return "<Symbol %r>" % self.attrs['href']
+        return "<Symbol %s>" % self.name
 
     def _set_linkage(self, name):
         # Set symbol linkage name (Class name used in actionscript)
@@ -251,12 +261,12 @@ class Symbol(object):
                     for tframe in tlayer.iter("{%s}DOMFrame" % ns):
                         for tsymb in tframe.iter("{%s}DOMSymbolInstance" % ns):
                             # Fix "<" and ">" characters from xml
-                            href = tsymb.attrib['libraryItemName']
+                            name = tsymb.attrib['libraryItemName']
                             for char in ENTITIES_FIX:
-                                href = href.replace(char, "&#%d" % ord(char))
+                                name = name.replace(char, "&#%d" % ord(char))
 
                             # Get Symbol instance from FLA Object
-                            symbol = self._fla.symbols[href]
+                            symbol = self._fla.symbols[name]
                             symbol.frame = tframe.attrib
                             symbol.layer = tlayer.attrib
                             symbol.timeline = ttimeline.attrib
