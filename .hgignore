@@ -1,0 +1,25 @@
+# use glob syntax.
+syntax: glob
+
+# xcode noise
+dist/
+*.egg-info/
+*.pbxuser
+*.mode1
+*.mode1v3
+
+*.swp
+*.pyc
+*.mo
+*~
+*.orig
+.cache*
+*.db
+.DS_Store
+._*
+build/*
+
+# switch to regexp syntax.
+syntax: regexp
+^\.pc/
+\.svn.*
