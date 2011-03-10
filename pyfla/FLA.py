@@ -239,10 +239,10 @@ class Symbol(object):
         tag = _tag_from_dict('DOMSymbolItem', self.dom.attrib, 
                              terminate=False)
         newxml = re.sub(u'<DOMSymbolItem.*?>', tag, 
-                        open(self.xml).read().decode('utf-8'))
+                        open(fsencode(self.xml)).read().decode('utf-8'))
 
         # Save xml
-        open(self.xml, 'w').write(newxml.encode('utf-8'))
+        open(fsencode(self.xml), 'w').write(newxml.encode('utf-8'))
 
         # This flag is used to make the linkage loaded at Flash IDE boot time
         if 'loadImmediate' in self.attrs:
