@@ -61,10 +61,6 @@ class FLA(object):
         for k, v in default_config.iteritems():
             setattr(self, k, v)
 
-    def __del__(self):
-        # Remove unused temp directory
-        shutil.rmtree(self.directory)
-
     @classmethod
     def fromfile(klass, filepath):
         """
