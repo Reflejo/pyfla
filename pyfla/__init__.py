@@ -1,1 +1,1 @@
-from FLA import FLA, InvalidFLAFile
+from FLA import FLA, InvalidFLAFile, Symbol

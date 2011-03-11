@@ -5,16 +5,23 @@ import unicodedata
 import zipfile
 
 BACKPORT_UNZIP = '/opt/local/bin/unzip -o -d %s "%s"'
-BACKPORT_ZIP = 'cd %s && /usr/bin/zip -q -r "%s" *'
+BACKPORT_ZIP = 'cd %s && /opt/local/bin/zip -q -r "%s" *'
 
 def fzip(filename, path):
-    if not filename.startswith('/'):
-        filename = '%s/%s' % (os.getcwd(), filename)
+    # Compress FLA file using zipfile python library
+    os.chdir(path)
 
-    run = BACKPORT_ZIP % (path, filename)
-    proc = subprocess.Popen(run, shell=True, stderr=subprocess.PIPE, 
-                                stdout=subprocess.PIPE)
-    proc.wait()
+    tree = list(os.walk('.'))
+    myzip = zipfile.ZipFile(filename, 'w')
+    for parent, dirs, files in tree:
+        for file in files:
+            if isinstance(file, str):
+                file = file.decode('utf-8')
+
+            file = unicodedata.normalize("NFC", file).encode('utf-8')
+            myzip.write('%s/%s' % (parent, file))
+
+    myzip.close()
 
 def funzip(filename, path):
     # Extract FLA file inside a temporary directory trying default 
@@ -37,9 +44,5 @@ def fsencode(filename):
     if isinstance(filename, str):
         filename = filename.decode('utf-8')
 
-    if sys.platform == 'linux2':
-        value = unicodedata.normalize('NFKD', filename)
-        return value.encode('utf-8')
-
-    if sys.platform == 'darwin':
-        return filename.encode('utf-8')
+    value = unicodedata.normalize('NFKD', filename)
+    return value.encode('utf-8')

@@ -197,9 +197,13 @@ class Symbol(object):
 
     def __init__(self, tag, FLA):
         self._fla = FLA
-        self.timeline = self.layer = self.frame = None
         self._depcache = None
         self._linkage = None
+
+        self.timeline = None
+        self.layer = None
+        self.instance_name = None
+        self.frame = None
 
         self.attrs = tag
 
@@ -268,6 +272,7 @@ class Symbol(object):
 
                             # Get Symbol instance from FLA Object
                             symbol = self._fla.symbols[name]
+                            symbol.instance_name = tsymb.attrib["name"]
                             symbol.frame = tframe.attrib
                             symbol.layer = tlayer.attrib
                             symbol.timeline = ttimeline.attrib
