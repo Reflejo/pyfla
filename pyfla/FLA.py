@@ -1,7 +1,9 @@
 """
-Merge Flash CS5 .FLA files, joining library objects
+CS5 .FLA parser
 
-Usage:
+Usage example:
+
+Merge Flash CS5 .FLA files, joining library objects
 
 >>> fla = FLA.fromfile('Element1.fla') + FLA.fromfile('Element2.fla')
 >>> fla.save('Merged.fla')
@@ -26,11 +28,15 @@ class InvalidFLAFile(Exception):
     This exception is raised when we cannot parse given FLA file
     """
 
+
+def _unicode(val):
+    # Decode string as needed checking if this is already decoded
+    return unicode(val, 'utf-8') if isinstance(val, str) else val
+
 def _tag_from_dict(tag, attrs, terminate=True):
     attrs = ''.join('%s="%s" ' % (k, v.replace('&', '&amp;')) \
                         for k, v in attrs.iteritems())
-    attrs = attrs.decode('utf-8') if isinstance(attrs, str) else attrs
-    return u'<%s %s%s>' % (tag, attrs, '/' if terminate else '')
+    return u'<%s %s%s>' % (tag, _unicode(attrs), '/' if terminate else '')
 
 
 class FLA(object):
@@ -199,20 +205,13 @@ class Symbol(object):
     def __init__(self, tag, FLA):
         self._fla = FLA
         self._depcache = None
+        self._instances = None
         self._linkage = None
-
-        self.timeline = None
-        self.layer = None
-        self.instance_name = None
-        self.frame = None
 
         self.attrs = tag
 
         # Get xml filename and remove extension
-        self.name = os.path.basename(tag['href'])[:-4]
-        if isinstance(self.name, str):
-            self.name = unicode(self.name, 'utf-8')
-
+        self.name = _unicode(os.path.basename(tag['href'])[:-4])
         self.xml = "%s/LIBRARY/%s" % (FLA.directory, tag['href'])
 
         # Fix filesystem encoding
@@ -261,6 +260,7 @@ class Symbol(object):
     def _dependencies(self):
         if self._depcache == None:
             self._depcache = set()
+            self._instances = []
             ns = self.dom.attrib['xmlns']
 
             # Iterate through dependencies and set up needed properties
@@ -271,21 +271,45 @@ class Symbol(object):
                         for tsymb in tframe.getiterator(tagname):
                             # Fix "<" and ">" characters from xml
                             name = tsymb.attrib['libraryItemName']
+
                             for char in ENTITIES_FIX:
                                 name = name.replace(char, "&#%d" % ord(char))
 
                             # Get Symbol instance from FLA Object
                             symbol = self._fla.symbols[name]
-                            symbol.instance_name = tsymb.attrib["name"]
-                            symbol.frame = tframe.attrib
-                            symbol.layer = tlayer.attrib
-                            symbol.timeline = ttimeline.attrib
+                            instance = SymbolInstance(
+                                symbol=symbol, name=tsymb.attrib["name"],
+                                frame=tframe.attrib["index"],
+                                layer=tlayer.attrib["name"],
+                                timeline=ttimeline.attrib["name"]
+                            )
 
+                            self._instances.append(instance)
                             self._depcache.add(symbol)
                             self._depcache = self._depcache.union(
                                     symbol.dependencies)
         
         return self._depcache
 
+    def _instances(self):
+        if self._instances == None:
+            self._dependencies()
+
+        return self._instances
+
     linkage = property(_get_linkage, _set_linkage)
     dependencies = property(_dependencies)
+    instances = property(_instances)
+
+
+class SymbolInstance(object):
+    """
+    This object represents an instance found in a timeline for a given symbol
+    """
+
+    def __init__(self, symbol, name, frame, layer, timeline):
+        self.symbol = symbol
+        self.name = _unicode(name)
+        self.frame = int(frame) + 1
+        self.layer = _unicode(layer)
+        self.timeline = _unicode(timeline)
