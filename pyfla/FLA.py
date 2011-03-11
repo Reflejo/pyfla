@@ -27,8 +27,9 @@ class InvalidFLAFile(Exception):
     """
 
 def _tag_from_dict(tag, attrs, terminate=True):
-    attrs = u''.join(u'%s="%s" ' % (k, v.replace('&', '&amp;')) \
+    attrs = ''.join('%s="%s" ' % (k, v.replace('&', '&amp;')) \
                         for k, v in attrs.iteritems())
+    attrs = attrs.decode('utf-8') if isinstance(attrs, str) else attrs
     return u'<%s %s%s>' % (tag, attrs, '/' if terminate else '')
 
 
