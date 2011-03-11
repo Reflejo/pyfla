@@ -7,6 +7,13 @@ import zipfile
 BACKPORT_UNZIP = '/opt/local/bin/unzip -o -d %s "%s"'
 BACKPORT_ZIP = 'cd %s && /opt/local/bin/zip -q -r "%s" *'
 
+def normalize(value):
+    if isinstance(value, str):
+        value = value.decode('utf-8')
+
+    value = unicodedata.normalize("NFC", value).encode('utf-8')
+    return value
+
 def fzip(filename, path):
     # Compress FLA file using zipfile python library
     os.chdir(path)
@@ -15,11 +22,7 @@ def fzip(filename, path):
     myzip = zipfile.ZipFile(filename, 'w')
     for parent, dirs, files in tree:
         for file in files:
-            if isinstance(file, str):
-                file = file.decode('utf-8')
-
-            file = unicodedata.normalize("NFC", file).encode('utf-8')
-            myzip.write('%s/%s' % (parent, file))
+            myzip.write('%s/%s' % (parent, normalize(file)))
 
     myzip.close()
 
@@ -37,12 +40,23 @@ def funzip(filename, path):
         out = proc.stdout.read()
         proc.wait()
 
-def fsencode(filename):
+def fixencoding(path):
     """
-    Encode filename according to platform
+    Fix filenames and directories with a wrong encoding. This behavoir is there
+    because unzip is setting wrong the encoding.
     """
-    if isinstance(filename, str):
-        filename = filename.decode('utf-8')
+    upath = unicode(path, 'utf-8') if isinstance(path, str) else path
+    path = upath.encode('utf-8')
 
-    value = unicodedata.normalize('NFKD', filename)
-    return value.encode('utf-8')
+    encoded = unicodedata.normalize('NFKD', upath).encode('utf-8')
+    basedir = os.path.dirname(path)
+    # Create fixed directory names as needed
+    if not os.path.isdir(basedir):
+        os.makedirs(basedir)
+
+    # Create fixed file names as needed
+    if not os.path.isfile(encoded):
+        encoded = "%s/%s" % (os.path.dirname(encoded), os.path.basename(path))
+
+    if encoded != path and not os.path.isfile(path):
+        shutil.copy(encoded, path)

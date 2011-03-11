@@ -15,7 +15,7 @@ from hashlib import md5
 from odict import OrderedDict
 from xml.etree.cElementTree import fromstring
 
-from fileoperations import fzip, funzip, fsencode
+from fileoperations import fzip, funzip, fixencoding
 
 # Get current script directory and append template path
 TPL_PATH = os.path.dirname(os.path.realpath(__file__)) + '/templates'
@@ -60,6 +60,10 @@ class FLA(object):
         # Save kwargs as attributes
         for k, v in default_config.iteritems():
             setattr(self, k, v)
+
+    def __del__(self):
+        # Remove unused temp directory
+        shutil.rmtree(self.directory)
 
     @classmethod
     def fromfile(klass, filepath):
@@ -163,14 +167,14 @@ class FLA(object):
                 }
 
             dest_file = "%s/LIBRARY/%s.xml" % (newfla.directory, ohref)
-            dest_dir = fsencode(os.path.dirname(dest_file))
+            dest_dir = os.path.dirname(dest_file)
 
             # Create directory if it does not exists
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
 
-            if os.path.dirname(fsencode(symbol.xml)) != dest_dir:
-                shutil.copy(fsencode(symbol.xml), dest_dir)
+            if os.path.dirname(symbol.xml) != dest_dir:
+                shutil.copy(symbol.xml, dest_dir)
 
             newfla.symbols[ohref].xml = dest_file
 
@@ -214,7 +218,10 @@ class Symbol(object):
 
         self.xml = "%s/LIBRARY/%s" % (FLA.directory, tag['href'])
 
-        self.dom = fromstring(open(fsencode(self.xml)).read())
+        # Fix filesystem encoding
+        fixencoding(self.xml)
+
+        self.dom = fromstring(open(self.xml).read())
         self.dom.attrib['xmlns'] = self.dom.tag.split('}')[0][1:]
 
     def to_xml(self):
@@ -243,10 +250,10 @@ class Symbol(object):
         tag = _tag_from_dict('DOMSymbolItem', self.dom.attrib, 
                              terminate=False)
         newxml = re.sub(u'<DOMSymbolItem.*?>', tag, 
-                        open(fsencode(self.xml)).read().decode('utf-8'))
+                        open(self.xml).read().decode('utf-8'))
 
         # Save xml
-        open(fsencode(self.xml), 'w').write(newxml.encode('utf-8'))
+        open(self.xml, 'w').write(newxml.encode('utf-8'))
 
         # This flag is used to make the linkage loaded at Flash IDE boot time
         if 'loadImmediate' in self.attrs:
