@@ -49,7 +49,7 @@ class FLA(object):
     def __init__(self, **kwargs):
         self.symbols = {}
         self.folders = OrderedDict()
-        self.directory = tempfile.mkdtemp()
+        self.directory = kwargs.get('directory') or tempfile.mkdtemp()
 
         # Load default configuration
         default_config = {
