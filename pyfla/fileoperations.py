@@ -5,7 +5,6 @@ import unicodedata
 import zipfile
 
 BACKPORT_UNZIP = '/opt/local/bin/unzip -o -d %s "%s"'
-BACKPORT_ZIP = 'cd %s && /opt/local/bin/zip -q -r "%s" *'
 
 def normalize(value):
     if isinstance(value, str):

@@ -68,6 +68,10 @@ class FLA(object):
         for k, v in default_config.iteritems():
             setattr(self, k, v)
 
+    def __del__(self):
+        # Remove unused temporary folder
+        shutil.rmtree(self.directory)
+
     @classmethod
     def fromfile(klass, filepath):
         """
@@ -105,7 +109,8 @@ class FLA(object):
             childs = domsymbols.getchildren()
             for symbol in childs:
                 name = symbol.attrib['href'][:-4]
-                fla.symbols[name] = Symbol(symbol.attrib, fla)
+                fla.symbols[name] = Symbol(symbol.attrib, fla.symbols, 
+                                           fla.directory)
 
         return fla
 
@@ -149,11 +154,11 @@ class FLA(object):
         fzip(filepath, self.directory)
 
     @classmethod
-    def from_symbols(klass, symbols, fladirectory=None):
+    def from_symbols(klass, symbols, fladirectory=None, flainstance=None):
         paths = lambda n: [] \
             if n == os.path.dirname(n) else paths(os.path.dirname(n)) + [n]
 
-        newfla = FLA(name='dynamic')
+        newfla = flainstance or FLA(name='dynamic')
         newfla.symbols = symbols
         if fladirectory:
             newfla.directory = fladirectory
@@ -192,7 +197,18 @@ class FLA(object):
             raise TypeError("You cannot add other than FLA object")
 
         symbols = dict(self.symbols, **other.symbols)
-        return FLA.from_symbols(symbols, self.directory)
+        return FLA.from_symbols(symbols)
+
+    def append(self, other):
+        """
+        Append symbols from other FLA files. This will not return a new copy
+        of the object.
+        """
+        if not isinstance(other, FLA):
+            raise TypeError("You cannot add other than FLA object")
+
+        symbols = dict(self.symbols, **other.symbols)
+        return FLA.from_symbols(symbols, self.directory, self)
 
 
 ENTITIES_FIX = (':', '<', '>')
@@ -202,8 +218,8 @@ class Symbol(object):
     and reference tag fro DOMDocument.xml
     """
 
-    def __init__(self, tag, FLA):
-        self._fla = FLA
+    def __init__(self, tag, symbols, directory):
+        self._symbols = symbols
         self._depcache = None
         self._instances = None
         self._linkage = None
@@ -212,7 +228,7 @@ class Symbol(object):
 
         # Get xml filename and remove extension
         self.name = _unicode(os.path.basename(tag['href'])[:-4])
-        self.xml = "%s/LIBRARY/%s" % (FLA.directory, tag['href'])
+        self.xml = "%s/LIBRARY/%s" % (directory, tag['href'])
 
         # Fix filesystem encoding
         fixencoding(self.xml)
@@ -276,7 +292,7 @@ class Symbol(object):
                                 name = name.replace(char, "&#%d" % ord(char))
 
                             # Get Symbol instance from FLA Object
-                            symbol = self._fla.symbols[name]
+                            symbol = self._symbols[name]
                             instance = SymbolInstance(
                                 symbol=symbol, name=tsymb.attrib["name"],
                                 frame=tframe.attrib["index"],
