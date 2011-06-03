@@ -109,8 +109,13 @@ class FLA(object):
             childs = domsymbols.getchildren()
             for symbol in childs:
                 name = symbol.attrib['href'][:-4]
-                fla.symbols[name] = Symbol(symbol.attrib, fla.symbols, 
-                                           fla.directory)
+                try:
+                    fla.symbols[name] = Symbol(symbol.attrib, fla.symbols,
+                                               fla.directory)
+                except IOError:
+                    # In some scenarios, there is referenced symbols that 
+                    # doesn't exists on directory.
+                    continue
 
         return fla
 
