@@ -37,10 +37,12 @@ def _unicode(val):
 def _fix_insensitive_path(path):
     # Some files could have an incorrect path information on case-insensitive
     # FS. This could cause lost of some symbols. This fix the case.
-    ipath = os.path.basename(path.lower())
+    bpath = os.path.basename(path)
+    ipath = bpath.lower()
     for f in glob.glob("%s/../*" % path):
-        if ipath == os.path.basename(f.lower()):
-            shutil.move(f, path)
+        base = os.path.basename(f)
+        if ipath == base.lower() and base != bpath:
+            os.rename(f, path)
             return
 
 def _tag_from_dict(tag, attrs, terminate=True):
