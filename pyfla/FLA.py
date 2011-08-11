@@ -9,6 +9,7 @@ Merge Flash CS5 .FLA files, joining library objects
 >>> fla.save('Merged.fla')
 """
 
+import glob
 import re
 import sys, os
 import shutil
@@ -32,6 +33,15 @@ class InvalidFLAFile(Exception):
 def _unicode(val):
     # Decode string as needed checking if this is already decoded
     return unicode(val, 'utf-8') if isinstance(val, str) else val
+
+def _fix_insensitive_path(path):
+    # Some files could have an incorrect path information on case-insensitive
+    # FS. This could cause lost of some symbols. This fix the case.
+    ipath = os.path.basename(path.lower())
+    for f in glob.glob("%s/../*" % path):
+        if ipath == os.path.basename(f.lower()):
+            shutil.move(f, path)
+            return
 
 def _tag_from_dict(tag, attrs, terminate=True):
     attrs = ''.join('%s="%s" ' % (k, v.replace('&', '&amp;')) \
@@ -98,6 +108,8 @@ class FLA(object):
             for folder in domfolders.getchildren():
                 path = folder.attrib['name']
                 uid = md5(path.encode('utf-8')).hexdigest()
+                _fix_insensitive_path(os.path.join(_dir, 'LIBRARY', path))
+
                 fla.folders[path] = {
                     'name': path,
                     'itemID': "0000%s-0000%s" % (uid[:4], uid[4:8])
