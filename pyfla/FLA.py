@@ -157,7 +157,11 @@ class FLA(object):
 
         xmlfolders = u'\n'.join(_tag_from_dict('DOMFolderItem', f)\
                 for f in self.folders.itervalues())
-        xmlsymbols = u'\n'.join(s.to_xml() for s in self.symbols.itervalues())
+        
+        # Sort Items, to avoid some Flash Crashes (!!!)
+        symbols = self.symbols.values()
+        symbols.sort(key=lambda x: x.attrs['href'])
+        xmlsymbols = u'\n'.join(s.to_xml() for s in symbols)
 
         xdom = self._replace_template(self.xdom, 
                 {'folders_xml': xmlfolders, 'symbols_xml': xmlsymbols})
