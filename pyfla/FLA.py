@@ -42,7 +42,8 @@ def _fix_insensitive_path(path):
     for f in glob.glob("%s/../*" % path):
         base = os.path.basename(f)
         if ipath == base.lower() and base != bpath:
-            os.rename(f, path)
+            shutil.move(f, path + 'temp')
+            shutil.move(path + 'temp', path)
             return
 
 def _tag_from_dict(tag, attrs, terminate=True):
